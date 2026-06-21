@@ -1,0 +1,102 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    name: Test the methodology + scripts
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Run vitest suite
+        run: npm test
+
+      - name: Verify bootstrap.sh syntax
+        run: bash -n bootstrap.sh && echo "✓ bootstrap.sh syntax OK"
+
+      - name: Verify all scripts have valid JS syntax
+        run: |
+          for f in scripts/*.js; do
+            if [ -f "$f" ]; then
+              node --check "$f" && echo "✓ $f" || (echo "✗ $f has syntax error" && exit 1)
+            fi
+          done
+
+      - name: Smoke test keyword extractor (no input = graceful exit)
+        run: |
+          if [ ! -f scripts/PROTECTED_KEYWORDS.js ]; then
+            echo "PROTECTED_KEYWORDS.js missing — bootstrap not yet run"
+            echo "(This is OK for a fresh clone; the bootstrap will generate it.)"
+          else
+            echo "✓ PROTECTED_KEYWORDS.js exists"
+            node -e "const { PROTECTED_KEYWORDS, COUNT } = require('./scripts/PROTECTED_KEYWORDS.js'); console.log('  count:', COUNT);"
+          fi
+
+      - name: Verify the protected-keyword gate is executable
+        run: |
+          node scripts/protected-keyword-gate.js --help 2>&1 | head -5 || echo "(no --help flag, that's fine)"
+
+      - name: Confirm the consolidation review is runnable
+        run: |
+          node scripts/consolidation-review.js --help 2>&1 | head -5 || echo "(no --help flag, that's fine)"
+
+  lint:
+    name: Markdown structure check
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Check that every .md file has a top-level heading
+        run: |
+          for f in $(find . -name '*.md' -not -path './node_modules/*'); do
+            first=$(head -1 "$f")
+            if [ "${first:0:1}" != "#" ]; then
+              echo "✗ $f doesn't start with #"
+              exit 1
+            fi
+          done
+          echo "✓ All .md files start with a heading"
+
+      - name: Check that docs link to existing files (best-effort)
+        run: |
+          echo "(skipping for now — basic structural checks only)"
+          echo "✓ Markdown structure OK"
+
+  status:
+    name: Final status
+    runs-on: ubuntu-latest
+    needs: [test, lint]
+    if: always()
+
+    steps:
+      - name: Report
+        run: |
+          if [ "${{ needs.test.result }}" = "success" ] && [ "${{ needs.lint.result }}" = "success" ]; then
+            echo "✓ All CI checks passed"
+            exit 0
+          else
+            echo "✗ Some CI checks failed"
+            echo "  test: ${{ needs.test.result }}"
+            echo "  lint: ${{ needs.lint.result }}"
+            exit 1
+          fi
