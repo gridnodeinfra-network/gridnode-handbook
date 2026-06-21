@@ -1,0 +1,20 @@
+{
+  "name": "gridnode-handbook",
+  "version": "1.0.0",
+  "description": "GRID//NODE handbook — single source of truth for the project, methodology, and tools",
+  "main": "scripts/PROTECTED_KEYWORDS.js",
+  "scripts": {
+    "test": "vitest run tests/",
+    "test:watch": "vitest tests/",
+    "extract-keywords": "node scripts/keyword-extractor.js",
+    "consolidation-review": "node scripts/consolidation-review.js",
+    "gate": "node scripts/protected-keyword-gate.js"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "vitest": "^1.0.0"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
