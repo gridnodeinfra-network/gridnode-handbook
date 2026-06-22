@@ -1,5 +1,5 @@
 # GRID//NODE Locked Baseline
-# Updated: 2026-06-22 (post-android-install-hint-modal)
+# Updated: 2026-06-22 (post-manifest-purpose-fix)
 # 
 # This file is the authoritative pointer to the locked baseline.
 # The actual file lives at: 
@@ -7,5 +7,5 @@
 # The live URL is: https://gridnode.pages.dev
 # Service worker: /sw.js (separate file, 1270 bytes)
 
-SHA-256: db19454a5935fdfe2599346ee0754110fb8c6b5ff9eda5795c999dda8e465beb
-SIZE: 1005606 bytes
+SHA-256: 4454077415189ef1083025957c8674a46f68f74c062faa3d6fa9aeaa18927b6e
+SIZE: 1005594 bytes
