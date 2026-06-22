@@ -22,6 +22,10 @@
 
   // === The standing report format (greppable as a constant) ===
   // Every change to GRID//NODE ends with this block in the change log.
+  // Per the verification agreement: TESTED-BY is the maker's self-test;
+  // TEST-INDEPENDENTLY-BY is the file-holder's verification. If
+  // TEST-INDEPENDENTLY-BY is PENDING, the change is provisionally live
+  // but not fully verified. Timeout: 7 days, then revert or escalate.
   var STANDING_REPORT_FORMAT = [
     'LANE: green | yellow | red',
     'ORIGINAL: <bytes> / <SHA>',
@@ -33,6 +37,7 @@
     'SELF-CHECK: pass | fail',
     'WHY THIS LANE: <one sentence, mandatory>',
     'TESTED-BY: <name> of <party> at <ISO timestamp>',
+    'TEST-INDEPENDENTLY-BY: <name> of <independent party> at <ISO timestamp> or PENDING',
     'TEST-METHOD: <one-line description>',
     'TEST-RESULT: pass | fail | partial',
     'CLAIMS-VERIFIED-BY-SCRIPT: <list with commands>',
