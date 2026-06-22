@@ -1,5 +1,5 @@
 # GRID//NODE Locked Baseline
-# Updated: 2026-06-22 (post-real-sw.js-fix)
+# Updated: 2026-06-22 (post-pwa-install-real-world-fixes)
 # 
 # This file is the authoritative pointer to the locked baseline.
 # The actual file lives at: 
@@ -7,5 +7,5 @@
 # The live URL is: https://gridnode.pages.dev
 # Service worker: /sw.js (separate file, 1270 bytes)
 
-SHA-256: b32d2ca3d9491bab93d73b9eeda708035f93e966cb5feb229cb677b093d2322f
-SIZE: 1000882 bytes
+SHA-256: 16e10d148e1a2b3a44209a143aa8858d3c72dd3c5cd4d0302d021c5ea2aaf1d2
+SIZE: 1003571 bytes
