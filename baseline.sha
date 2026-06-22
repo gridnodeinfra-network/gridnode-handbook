@@ -1,10 +1,10 @@
 # GRID//NODE Locked Baseline
-# Updated: 2026-06-22 (post-directive-removal, per Master Directive v2 + Velocity Directive)
+# Updated: 2026-06-22 (post-launch-bug-fixes, per Master Directive v2 + Velocity Directive)
 # 
 # This file is the authoritative pointer to the locked baseline.
 # The actual file lives at: 
 #   /workspace/gridnode-project/01_SOURCE_TRUTH_LOCKED/gridnode-v1.3_post-phase-D_baseline.html
 # The live URL is: https://gridnode.pages.dev
 
-SHA-256: ff10f533b6fb897f82c4f7f4f52124c967d4fc9c18697be7d01cc9459f4baf1a
-SIZE: 1000594 bytes
+SHA-256: 63229d548850d234b4b95161432350922db6ca2fb24259e6dd3596d5c6572b9b
+SIZE: 1001591 bytes
