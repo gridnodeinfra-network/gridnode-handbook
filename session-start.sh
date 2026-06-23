@@ -68,7 +68,7 @@ echo ""
 # ─────────────────────────────────────────────────────────────────────────────
 echo "[1/5] Setting up handbook repo at $HANDOFF_DIR..."
 
-# If exists but is stale or broken, nuke and re-clone. Don't try to be clever.
+# If exists but is stale, broken, or diverged, nuke and re-clone. Don't try to be clever.
 NEED_CLONE=false
 if [ ! -d "$HANDOFF_DIR" ]; then
     NEED_CLONE=true
@@ -77,15 +77,36 @@ elif [ ! -d "$HANDOFF_DIR/.git" ]; then
     rm -rf "$HANDOFF_DIR"
     NEED_CLONE=true
 else
-    # Try to pull. If it fails (network, divergence, etc.), nuke and re-clone.
+    # Strict check: local HEAD must match origin/main HEAD.
+    # If local is behind (older commit), pull --ff-only brings it up to date.
+    # If local is ahead (has local-only commits), pull --ff-only is a no-op,
+    #   which means the local is missing newer commits from origin.
+    # If local has diverged (mix of ahead + behind), pull --ff-only fails.
+    # In all "we don't match origin" cases, nuke and re-clone.
     cd "$HANDOFF_DIR"
-    if ! git pull --ff-only 2>/dev/null; then
-        warn "Local clone is stale or diverged — removing and re-cloning fresh"
+    ORIGIN_MAIN=$(git rev-parse origin/main 2>/dev/null)
+    LOCAL_HEAD=$(git rev-parse HEAD 2>/dev/null)
+    if [ -z "$ORIGIN_MAIN" ]; then
+        # No origin/main ref (maybe no network) — try fetching
+        if ! git fetch origin 2>/dev/null; then
+            warn "Cannot reach origin — using existing local clone as-is"
+        else
+            ORIGIN_MAIN=$(git rev-parse origin/main 2>/dev/null)
+        fi
+    fi
+    if [ -n "$ORIGIN_MAIN" ] && [ "$LOCAL_HEAD" != "$ORIGIN_MAIN" ]; then
+        warn "Local clone is at ${LOCAL_HEAD:0:8}... but origin/main is at ${ORIGIN_MAIN:0:8}..."
+        warn "Removing local clone and re-cloning fresh"
+        cd /
+        rm -rf "$HANDOFF_DIR"
+        NEED_CLONE=true
+    elif ! git pull --ff-only 2>/dev/null; then
+        warn "git pull failed — removing and re-cloning fresh"
         cd /
         rm -rf "$HANDOFF_DIR"
         NEED_CLONE=true
     else
-        ok "Handbook repo up to date"
+        ok "Handbook repo up to date (matches origin/main)"
     fi
 fi
 
