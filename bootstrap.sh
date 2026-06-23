@@ -152,7 +152,18 @@ echo ""
 echo "[5c/8] Checking gh CLI..."
 if ! command -v gh &> /dev/null; then
   if command -v apt-get &> /dev/null; then
-    apt-get install -y gh 2>/dev/null && ok "Installed gh CLI" || warn "gh CLI install failed (apt not available?)"
+    # Add GitHub's apt repo then install (gh not in default Debian repos)
+    if (curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg 2>/dev/null | dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg 2>/dev/null && echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" > /etc/apt/sources.list.d/github-cli.list 2>/dev/null && apt-get update -qq 2>/dev/null && apt-get install -y gh 2>/dev/null); then
+      ok "Installed gh CLI (apt + GitHub repo)"
+    else
+      # Fallback: download binary directly
+      if (curl -fsSL https://github.com/cli/cli/releases/download/v2.62.0/gh_2.62.0_linux_amd64.tar.gz 2>/dev/null | tar -xz -C /tmp/ gh_2.62.0_linux_amd64/bin/gh 2>/dev/null && mv /tmp/gh_2.62.0_linux_amd64/bin/gh /usr/local/bin/ 2>/dev/null); then
+        ok "Installed gh CLI (binary)"
+      else
+        warn "gh CLI install failed (network or perms?)"
+        warn "Future pushes will need manual gh install or use git+token"
+      fi
+    fi
   else
     warn "gh CLI not installed and apt-get not available"
   fi
