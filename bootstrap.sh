@@ -201,6 +201,65 @@ else
   warn "See: /workspace/.gridnode-secrets/CREDENTIALS.md (when available)"
 fi
 
+# 5e. Install Mavin toolchain (the 25 tools that make work fast)
+echo ""
+echo "[5e/8] Installing Mavin toolchain..."
+if [ -f "$HANDOFF_DIR/install-tools.sh" ]; then
+  bash "$HANDOFF_DIR/install-tools.sh"
+else
+  warn "install-tools.sh not found, skipping toolchain install"
+fi
+
+# 5f. Verify essential dev tools (warn if missing, don't fail)
+echo ""
+echo "[5f/8] Pre-flight tool check..."
+missing_essential=()
+missing_optional=()
+
+# Essential: needed for routine Mavin work
+for tool in git node npx python3 curl; do
+  if ! command -v "$tool" &> /dev/null; then
+    missing_essential+=("$tool")
+  fi
+done
+
+# Optional: speed up specific work
+for tool in svgo shellcheck ffmpeg tesseract chromium google-chrome; do
+  if ! command -v "$tool" &> /dev/null; then
+    missing_optional+=("$tool")
+  fi
+done
+
+# Report
+if [ ${#missing_essential[@]} -eq 0 ]; then
+  ok "Essential tools present: git, node, npx, python3, curl"
+else
+  err "Missing essential tools: ${missing_essential[*]}"
+  echo "       Without these, Mavin can't do basic work (git, vitest, wrangler, manifest builds)."
+  echo "       Install with: apt-get install -y ${missing_essential[*]}"
+  exit 1
+fi
+
+if [ ${#missing_optional[@]} -eq 0 ]; then
+  ok "All optional tools present: svgo, shellcheck, ffmpeg, tesseract, chromium"
+else
+  warn "Missing optional tools: ${missing_optional[*]}"
+  echo "       These speed up specific work but aren't required:"
+  echo "       - svgo: SVG optimization"
+  echo "       - shellcheck: bash lint"
+  echo "       - ffmpeg: video/audio"
+  echo "       - tesseract: OCR"
+  echo "       - chromium/chrome: headless visual verification"
+  echo "       Install on demand with: apt-get install -y ${missing_optional[*]}"
+fi
+
+# Bonus: check for commonly-installed dev tools Mavin uses
+for tool in fzf ripgrep jq make gcc; do
+  if command -v "$tool" &> /dev/null; then
+    ok "$tool present"
+  fi
+done
+
 # 6b. Run Foundation vitest smoke test (NEW)
 echo ""
 echo "[6b/8] Foundation vitest smoke test..."
