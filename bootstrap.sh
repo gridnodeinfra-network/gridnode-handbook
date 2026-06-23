@@ -186,8 +186,7 @@ fi
 echo ""
 echo "[6b/8] Foundation vitest smoke test..."
 if [ -f "$SKILLS_DIR/gridnode-mavis-builder/foundation/vitest.config.js" ] && [ -d "$SKILLS_DIR/gridnode-mavis-builder/foundation/tests" ]; then
-  cd "$SKILLS_DIR/gridnode-mavis-builder/foundation"
-  if [ -d node_modules ]; then
+  if [ -d "$SKILLS_DIR/gridnode-mavis-builder/foundation/node_modules" ]; then
     if (cd "$SKILLS_DIR/gridnode-mavis-builder/foundation" && npx --no-install vitest run --reporter=basic 2>&1 | tail -10) ; then
       ok "Foundation tests passed (jsdom env verified)"
     else
