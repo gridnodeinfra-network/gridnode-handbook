@@ -103,8 +103,13 @@ for kw in "scannerMode" "gn_settings" "Phase Engine" "SHOT HISTORY" "VAULT"; do
     fi
 done
 echo "  Protected keyword references: $protected_keywords"
-if [ "$protected_keywords" -lt 50 ]; then
-    echo "  ⚠️  Low count — possible missing systems"
+if [ "$protected_keywords" -eq 0 ]; then
+    # Zero matches = the candidate is missing all protected systems
+    # This is a real bug, not just "low count"
+    echo "  ❌ No protected keywords found — candidate is missing core systems"
+    FAIL=1
+elif [ "$protected_keywords" -lt 50 ]; then
+    echo "  ⚠️  Low count ($protected_keywords) — possible missing systems"
 fi
 echo ""
 
