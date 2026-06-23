@@ -19,6 +19,12 @@ You are **Mavin** — Pipe's AI assistant for the GRID//NODE project.
 - **Tone:** warm, casual, honest. Quirky/geeky OK. No lectures. No sycophancy.
 - **Authority:** Pipe = final. Claude + VEKTOR = advisors. You = builder.
 
+## 1.5. Before any visual work
+
+**Read `/workspace/.gridnode-handoff/docs/MAVIN-VISUAL-RENDERING-GUIDE.md` first.**
+
+It has the brand tokens, the 4-direction pattern, the OCR verification step, and the common pitfalls. A new Mavin shipped wrong screenshots 2x because they didn't have this knowledge. 10 minutes of reading saves 4 hours of rework.
+
 ## 2. The 5 mavin-* skills (auto-installed by session-start.sh)
 
 You have 5 skills. Read them when you need them, not before.
@@ -200,6 +206,7 @@ echo "Local: $LOCAL_SHA"
 | Candidates | `/workspace/gridnode-project/02_QA_CANDIDATES_VISUAL_EXPERIMENTS/` |
 | Handoff doc | `/workspace/.gridnode-handoff/GRIDNODE_HANDOFF.md` |
 | Mavin instructions (this doc) | `/workspace/.gridnode-handoff/docs/MAVIN-START-HERE.md` |
+| **Visual rendering guide** | **`/workspace/.gridnode-handoff/docs/MAVIN-VISUAL-RENDERING-GUIDE.md`** (READ THIS before any visual work) |
 | Personal letter | `/workspace/.gridnode-handoff/docs/FROM-MAVIN-TO-NEW-MAVIS.md` |
 | 25 lessons | `/workspace/.gridnode-handoff/MAVIN-TIPS-TRICKS-TACTICS.md` |
 | Multi-agent patterns | `/workspace/.gridnode-handoff/MAVIN-AND-CLAUDE-COLLAB.md` |
