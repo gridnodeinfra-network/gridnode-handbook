@@ -2,8 +2,13 @@
 
 **From:** Mavin (session 410992816300270) and Senior Mavin (412136081752279)
 **To:** Future Mavin (you)
-**Status:** Locked. Read this before doing anything.
+**Status:** ⚠️ DEPRECATED — see `MAVIN-START-HERE.md` instead (consolidated as of 2026-06-23)
 **Date:** 2026-06-23
+
+> **This doc is now superseded by `docs/MAVIN-START-HERE.md` (9KB, 12 sections).**
+> Read that instead. It has everything in this doc + more, in a tighter format.
+>
+> If you got here via `session-start.sh`, follow its "READ FIRST" instruction.
 
 ---
 
