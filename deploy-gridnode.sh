@@ -79,7 +79,12 @@ if [ -f /workspace/.gridnode-secrets/load-credentials.sh ]; then
 fi
 
 # Allow override via env, fall back to per-session
-export CLOUDFLARE_API_TOKEN="${CLOUDFLARE_API_TOKEN:-cfut_0ss0JRLE2PD4ZJMjockHeZHAui6cWK61xMEahxQhebe0e25b}"
+if [ -z "$CLOUDFLARE_API_TOKEN" ]; then
+  echo "❌ CLOUDFLARE_API_TOKEN not set"
+  echo "   Run: source /workspace/.gridnode-secrets/load-credentials.sh"
+  echo "   Or:  export CLOUDFLARE_API_TOKEN=... (see CREDENTIALS.md)"
+  exit 1
+fi
 export CLOUDFLARE_ACCOUNT_ID="${CLOUDFLARE_ACCOUNT_ID:-f008e0b7e3867a6050b412d931a9abd9}"
 npx --yes wrangler pages deploy . --project-name=gridnode --branch=main --commit-dirty=true 2>&1 | tail -8
 echo ""
