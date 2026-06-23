@@ -32,14 +32,40 @@ err()  { printf "  \033[31m✗\033[0m %s\n" "$1"; }
 
 bold "==> GRID//NODE Bootstrap"
 
+# Step 0: If a local handoff checkout already exists, force-pull latest from origin.
+# This is the structural fix for the rc28.x stale-local-clone failure:
+#   - If the local clone is at an older commit, the OLD bootstrap runs (no step 9)
+#   - The OLD bootstrap doesn't install the mavin-* skills
+#   - The next Mavin runs the wrong tool set, burns 8 versions on the same fix
+# The fix: ALWAYS pull --ff-only before doing anything else. Fails loud on divergence.
+# (per other Mavin's ask in FOR-MAVERICK-2026-06-23.md)
+echo ""
+echo "[0/11] Ensuring local handoff checkout is current..."
+if [ -d "$HANDOFF_DIR/.git" ]; then
+  cd "$HANDOFF_DIR"
+  if ! git pull --ff-only 2>&1 | tail -3; then
+    err "git pull --ff-only FAILED."
+    err "  The local checkout is stale or diverged. Resolve manually:"
+    err "    cd $HANDOFF_DIR"
+    err "    git status"
+    err "    git pull --ff-only    (or git fetch + merge/rebase as needed)"
+    err "  Then re-run bootstrap."
+    err "  This is a hard stop — proceeding would install the wrong tool set."
+    exit 1
+  fi
+  ok "Pulled latest from origin (local matches public now)"
+  cd - >/dev/null
+else
+  ok "No existing .gridnode-handoff clone — step 1 will clone fresh"
+fi
+
 # 1. Clone or update the handoff repo
 echo ""
 if [ -d "$HANDOFF_DIR/.git" ]; then
-  echo "[1/7] Handoff already cloned — pulling latest"
-  cd "$HANDOFF_DIR" && git pull --quiet
-  ok "Updated to latest"
+  echo "[1/11] Handoff already cloned (verified current in step 0)"
+  ok "Ready to use $HANDOFF_DIR"
 else
-  echo "[1/7] Cloning handoff repo..."
+  echo "[1/11] Cloning handoff repo..."
   if git clone --depth 1 "$HANDOFF_REPO" "$HANDOFF_DIR" 2>/dev/null; then
     ok "Cloned to $HANDOFF_DIR"
   else
@@ -58,7 +84,7 @@ cd "$HANDOFF_DIR"
 
 # 2. Read the locked state
 echo ""
-echo "[2/7] Reading locked state..."
+echo "[3/11] Reading locked state..."
 if [ -f "baseline.sha" ]; then
   while IFS= read -r line; do
     echo "       $line"
@@ -70,7 +96,7 @@ fi
 
 # 3. Verify baseline (if path provided)
 echo ""
-echo "[3/7] Verifying baseline..."
+echo "[4/11] Verifying baseline..."
 if [ -n "$BASELINE_PATH" ]; then
   if [ -f "$BASELINE_PATH" ]; then
     actual_sha=$(sha256sum "$BASELINE_PATH" | cut -d' ' -f1)
@@ -93,7 +119,7 @@ fi
 
 # 4. Install Ponytail skills
 echo ""
-echo "[4/7] Installing Ponytail skills..."
+echo "[5/11] Installing Ponytail skills..."
 mkdir -p "$SKILLS_DIR"
 PONYTAIL_TMP=/tmp/ponytail-clone-$$
 rm -rf "$PONYTAIL_TMP"
@@ -127,7 +153,7 @@ fi
 
 # 5. Install the handoff loader skill
 echo ""
-echo "[5/8] Installing handoff loader skill..."
+echo "[6/11] Installing handoff loader skill..."
 if [ -f "$HANDOFF_DIR/.skills/gridnode-handoff-loader/SKILL.md" ]; then
   cp "$HANDOFF_DIR/.skills/gridnode-handoff-loader/SKILL.md" \
      "$SKILLS_DIR/gridnode-handoff-loader/SKILL.md"
@@ -138,7 +164,7 @@ fi
 
 # 5b. Install the GRID//NODE builder skill (Mavin role + Foundation)
 echo ""
-echo "[5b/8] Installing GRID//NODE builder skill..."
+echo "[6b/11] Installing GRID//NODE builder skill..."
 BUILDER_REPO="https://github.com/gridnodeinfra-network/gridnode-mavis-builder.git"
 if git clone --depth 1 "$BUILDER_REPO" "$SKILLS_DIR/gridnode-mavis-builder" 2>/dev/null; then
   ok "Installed: gridnode-mavis-builder (Mavin role + Foundation)"
@@ -149,7 +175,7 @@ fi
 
 # 5c. Install gh CLI if missing
 echo ""
-echo "[5c/8] Checking gh CLI..."
+echo "[6c/11] Checking gh CLI..."
 if ! command -v gh &> /dev/null; then
   if command -v apt-get &> /dev/null; then
     # Add GitHub's apt repo then install (gh not in default Debian repos)
@@ -173,7 +199,7 @@ fi
 
 # 6. Verify the install
 echo ""
-echo "[6/8] Verifying install..."
+echo "[7/11] Verifying install..."
 expected_skills=8
 actual_skills=$(ls "$SKILLS_DIR"/{ponytail-*,gridnode-handoff-loader,gridnode-mavis-builder}/SKILL.md 2>/dev/null | wc -l)
 if [ "$actual_skills" -eq "$expected_skills" ]; then
@@ -184,7 +210,7 @@ fi
 
 # 5d. Load credentials if available
 echo ""
-echo "[5d/8] Loading credentials..."
+echo "[6d/11] Loading credentials..."
 if [ -f /workspace/.gridnode-secrets/load-credentials.sh ]; then
   # Use 'source' not 'bash' so the loader's exports propagate to this shell
   # (bash runs in a subshell; its exports don't reach us)
@@ -203,7 +229,7 @@ fi
 
 # 5e. Install Mavin toolchain (the 25 tools that make work fast)
 echo ""
-echo "[5e/8] Installing Mavin toolchain..."
+echo "[6e/11] Installing Mavin toolchain..."
 if [ -f "$HANDOFF_DIR/install-tools.sh" ]; then
   bash "$HANDOFF_DIR/install-tools.sh"
 else
@@ -212,7 +238,7 @@ fi
 
 # 5f. Verify essential dev tools (warn if missing, don't fail)
 echo ""
-echo "[5f/8] Pre-flight tool check..."
+echo "[6f/11] Pre-flight tool check..."
 missing_essential=()
 missing_optional=()
 
@@ -262,7 +288,7 @@ done
 
 # 6b. Run Foundation vitest smoke test (NEW)
 echo ""
-echo "[6b/8] Foundation vitest smoke test..."
+echo "[7b/11] Foundation vitest smoke test..."
 if [ -f "$SKILLS_DIR/gridnode-mavis-builder/foundation/vitest.config.js" ] && [ -d "$SKILLS_DIR/gridnode-mavis-builder/foundation/tests" ]; then
   if [ -d "$SKILLS_DIR/gridnode-mavis-builder/foundation/node_modules" ]; then
     if (cd "$SKILLS_DIR/gridnode-mavis-builder/foundation" && npx --no-install vitest run --reporter=basic 2>&1 | tail -10) ; then
@@ -280,7 +306,7 @@ fi
 
 # 7. Run a smoke test
 echo ""
-echo "[7/8] Smoke test..."
+echo "[8/11] Smoke test..."
 if [ -x "$HANDOFF_DIR/scripts/keyword-extractor.js" ]; then
   if [ -n "$BASELINE_PATH" ] && [ -f "$BASELINE_PATH" ]; then
     output=$(node "$HANDOFF_DIR/scripts/keyword-extractor.js" "$BASELINE_PATH" 2>&1 || true)
@@ -306,7 +332,7 @@ fi
 
 # 8. Verify live matches lock
 echo ""
-echo "[8/8] Verifying live deploy matches lock..."
+echo "[9/11] Verifying live deploy matches lock..."
 LIVE_URL=$(grep -oE 'https?://[^ ]+' baseline.sha 2>/dev/null | head -1)
 LOCK_SHA=$(grep -oE '[0-9a-f]{64}' baseline.sha 2>/dev/null | head -1)
 if [ -n "$LIVE_URL" ] && [ -n "$LOCK_SHA" ]; then
@@ -324,7 +350,7 @@ fi
 
 # 9. Install runtime-verify scripts + ALL mavin-* skills (NEW: prevents shipping buggy code)
 echo ""
-echo "[9/9] Installing runtime-verify + mavin-* skills..."
+echo "[10/11] Installing runtime-verify + mavin-* skills..."
 
 # 9a. Install the verify-candidate.sh binary
 VERIFY_DIR="$HANDOFF_DIR/skills/mavin-runtime-verify"
@@ -341,7 +367,7 @@ fi
 # the next Mavin won't know the mavin-build-candidate / mavin-visual-render /
 # mavin-verify-deploy / mavin-runtime-verify / mavin-debug-failure patterns.
 echo ""
-echo "[9b/9] Installing mavin-* skills (5 critical skills)..."
+echo "[10b/11] Installing mavin-* skills (5 critical skills)..."
 
 MAVIN_SKILLS=(
     "mavin-build-candidate"
@@ -382,7 +408,7 @@ ok "Installed $mavin_installed/5 mavin-* skills to /workspace/.skills/"
 
 # 9c. Verify the mavin-* skills are in place
 echo ""
-echo "[9c/9] Verifying mavin-* skills install..."
+echo "[10c/11] Verifying mavin-* skills install..."
 mavin_present=$(ls "$SKILLS_DIR"/mavin-*/SKILL.md 2>/dev/null | wc -l)
 if [ "$mavin_present" -ge 5 ]; then
     ok "All 5 mavin-* skills present"
@@ -415,6 +441,31 @@ echo "✅ Verification passed. Safe to deploy."
 EOF
 chmod +x "$HOOK_PATH"
 ok "Pre-deploy hook installed at $HOOK_PATH"
+
+# Final verification guard (per other Mavin's ask in FOR-MAVERICK-2026-06-23.md)
+# This is the structural fix for the rc28.x failure: ensure the tools the next
+# Mavin needs are ACTUALLY present, not just that the install commands ran.
+echo ""
+echo "[11/11] Final verification — mavin-* skills + verify CLI..."
+mavin_count=$(ls "$SKILLS_DIR"/mavin-*/SKILL.md 2>/dev/null | wc -l)
+if [ "$mavin_count" -eq 5 ]; then
+  ok "All 5 mavin-* skills verified present"
+else
+  err "Only $mavin_count/5 mavin-* skills present"
+  err "  Future Mavins WILL hit the 8-version bug loop without these"
+  err "  Re-run bootstrap or manually pull from $HANDOFF_REPO"
+  exit 1
+fi
+
+# Also verify the runtime-verify CLI is on PATH
+if ! command -v verify-gridnode-candidate &> /dev/null; then
+  err "verify-gridnode-candidate not on PATH"
+  err "  Runtime-verify skill loaded but CLI missing"
+  err "  Mavis can't enforce pre-deploy checks"
+  err "  Re-run bootstrap to install it"
+  exit 1
+fi
+ok "verify-gridnode-candidate on PATH and ready"
 
 # Final summary
 echo ""
