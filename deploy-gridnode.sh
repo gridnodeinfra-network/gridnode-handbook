@@ -29,6 +29,23 @@ echo "  GRID//NODE DEPLOY + HANDOFF SYNC"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo ""
 
+# Step 0: Pre-deploy verification (NEW: catches runtime bugs before deploy)
+if [ -n "$CANDIDATE" ] && [ -f "$CANDIDATE" ]; then
+  echo "🔍 Step 0/6: PRE-DEPLOY VERIFICATION (catches runtime bugs)..."
+  if command -v verify-gridnode-candidate &> /dev/null; then
+    if ! verify-gridnode-candidate "$CANDIDATE"; then
+      echo ""
+      echo "❌ VERIFICATION FAILED. Do not deploy."
+      echo "   Fix the issues in the candidate, then retry."
+      exit 1
+    fi
+  else
+    echo "⚠️  verify-gridnode-candidate not installed — bootstrap first"
+    echo "   Skipping runtime verification (NOT RECOMMENDED)"
+  fi
+  echo ""
+fi
+
 # Step 1: Copy source → deploy folder
 if [ -n "$CANDIDATE" ] && [ -f "$CANDIDATE" ]; then
   echo "📦 Step 1/5: Copying CANDIDATE → deploy folder..."

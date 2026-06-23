@@ -322,6 +322,44 @@ else
   warn "Could not parse LIVE_URL or LOCK_SHA from baseline.sha"
 fi
 
+# 9. Install runtime-verify scripts (NEW: prevents shipping buggy code)
+echo ""
+echo "[9/9] Installing runtime-verify scripts..."
+VERIFY_DIR="$HANDOFF_DIR/skills/mavin-runtime-verify"
+if [ -f "$VERIFY_DIR/verify-candidate.sh" ]; then
+    # Copy to a stable, executable location
+    cp "$VERIFY_DIR/verify-candidate.sh" /usr/local/bin/verify-gridnode-candidate
+    chmod +x /usr/local/bin/verify-gridnode-candidate
+    ok "verify-candidate.sh → /usr/local/bin/verify-gridnode-candidate"
+    
+    # Add a hook to deploy-gridnode.sh so it can't be skipped
+    HOOK_PATH="$HANDOFF_DIR/scripts/deploy-pre-hook.sh"
+    mkdir -p "$HANDOFF_DIR/scripts"
+    cat > "$HOOK_PATH" <<'EOF'
+#!/bin/bash
+# Pre-deploy hook — runs automatically before any deploy
+# Catches: duplicate function defs, scope leaks, ReferenceErrors, large deltas
+# This is MANDATORY. Don't disable this without Pipe's approval.
+CANDIDATE="${1:?verify-gridnode-candidate <candidate.html>}"
+if ! command -v verify-gridnode-candidate &> /dev/null; then
+    echo "❌ verify-gridnode-candidate not installed. Run bootstrap.sh first."
+    exit 1
+fi
+echo "═══ PRE-DEPLOY VERIFICATION ═══"
+if ! verify-gridnode-candidate "$CANDIDATE"; then
+    echo ""
+    echo "❌ VERIFICATION FAILED. Do not deploy."
+    echo "   Fix the issues in the candidate, then retry."
+    exit 1
+fi
+echo "✅ Verification passed. Safe to deploy."
+EOF
+    chmod +x "$HOOK_PATH"
+    ok "Pre-deploy hook installed at $HOOK_PATH"
+else
+    warn "verify-candidate.sh not found in handbook repo — runtime checks disabled"
+fi
+
 # Final summary
 echo ""
 bold "==> Bootstrap complete"
