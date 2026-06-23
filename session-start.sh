@@ -36,6 +36,16 @@
 
 set -e
 
+# Prevent concurrent runs (would corrupt state)
+LOCK_FILE="/tmp/gridnode-session-start.lock"
+exec 200>"$LOCK_FILE"
+if ! flock -n 200; then
+    echo "Another session-start.sh is already running (lock: $LOCK_FILE)"
+    echo "If you're sure no other instance is running, delete the lock file:"
+    echo "  rm $LOCK_FILE"
+    exit 1
+fi
+
 # ─────────────────────────────────────────────────────────────────────────────
 # Configuration
 # ─────────────────────────────────────────────────────────────────────────────
@@ -77,23 +87,19 @@ elif [ ! -d "$HANDOFF_DIR/.git" ]; then
     rm -rf "$HANDOFF_DIR"
     NEED_CLONE=true
 else
-    # Strict check: local HEAD must match origin/main HEAD.
-    # If local is behind (older commit), pull --ff-only brings it up to date.
-    # If local is ahead (has local-only commits), pull --ff-only is a no-op,
-    #   which means the local is missing newer commits from origin.
-    # If local has diverged (mix of ahead + behind), pull --ff-only fails.
-    # In all "we don't match origin" cases, nuke and re-clone.
+    # CRITICAL: Fetch FIRST so origin/main is current. Without this,
+    # the local origin/main ref is stale and we can't detect divergence.
     cd "$HANDOFF_DIR"
+    if ! git fetch origin 2>/dev/null; then
+        warn "Cannot fetch from origin (network issue?)"
+        warn "Will try to use existing local clone, but it may be stale"
+    fi
+    # Now check: local HEAD must match origin/main HEAD.
+    # If local is behind (older commit), nuke + re-clone gets latest.
+    # If local is ahead (has local-only commits), nuke + re-clone gets latest.
+    # If local has diverged (mix of ahead + behind), nuke + re-clone gets latest.
     ORIGIN_MAIN=$(git rev-parse origin/main 2>/dev/null)
     LOCAL_HEAD=$(git rev-parse HEAD 2>/dev/null)
-    if [ -z "$ORIGIN_MAIN" ]; then
-        # No origin/main ref (maybe no network) — try fetching
-        if ! git fetch origin 2>/dev/null; then
-            warn "Cannot reach origin — using existing local clone as-is"
-        else
-            ORIGIN_MAIN=$(git rev-parse origin/main 2>/dev/null)
-        fi
-    fi
     if [ -n "$ORIGIN_MAIN" ] && [ "$LOCAL_HEAD" != "$ORIGIN_MAIN" ]; then
         warn "Local clone is at ${LOCAL_HEAD:0:8}... but origin/main is at ${ORIGIN_MAIN:0:8}..."
         warn "Removing local clone and re-cloning fresh"
@@ -106,7 +112,17 @@ else
         rm -rf "$HANDOFF_DIR"
         NEED_CLONE=true
     else
-        ok "Handbook repo up to date (matches origin/main)"
+        # Even if HEAD matches, verify key files exist. A corrupted clone
+        # (e.g., files manually deleted) should trigger a re-clone.
+        if [ ! -f "$HANDOFF_DIR/session-start.sh" ] || [ ! -d "$HANDOFF_DIR/skills" ]; then
+            warn "Local clone is at ${LOCAL_HEAD:0:8}... but key files are missing"
+            warn "Removing local clone and re-cloning fresh"
+            cd /
+            rm -rf "$HANDOFF_DIR"
+            NEED_CLONE=true
+        else
+            ok "Handbook repo up to date (matches origin/main, key files present)"
+        fi
     fi
 fi
 
@@ -144,12 +160,18 @@ if [ -n "$LIVE_CONTENT" ]; then
     LIVE_SHA=$(echo "$LIVE_CONTENT" | sha256sum | cut -d' ' -f1)
     echo "  Live SHA: ${LIVE_SHA:0:16}..."
 
-    if [ -f "$LOCAL_BASELINE" ]; then
-        LOCAL_SHA=$(sha256sum "$LOCAL_BASELINE" | cut -d' ' -f1)
+    if [ -f "$LOCAL_BASELINE" ] || [ -L "$LOCAL_BASELINE" ]; then
+        LOCAL_SHA=$(sha256sum "$LOCAL_BASELINE" 2>/dev/null | cut -d' ' -f1)
         if [ "$LIVE_SHA" != "$LOCAL_SHA" ]; then
             warn "Drift detected — local=${LOCAL_SHA:0:16}... live=${LIVE_SHA:0:16}..."
-            # Backup local first
-            cp "$LOCAL_BASELINE" "$LOCAL_BASELINE.drift-backup-$(date +%Y%m%d-%H%M%S)"
+            # Handle broken symlinks (don't try to backup, just remove)
+            if [ -L "$LOCAL_BASELINE" ] && [ ! -e "$LOCAL_BASELINE" ]; then
+                rm "$LOCAL_BASELINE"
+            else
+                # Backup local first
+                cp "$LOCAL_BASELINE" "$LOCAL_BASELINE.drift-backup-$(date +%Y%m%d-%H%M%S)" 2>/dev/null || true
+                rm -f "$LOCAL_BASELINE"
+            fi
             # Pull live down
             if echo "$LIVE_CONTENT" > "$LOCAL_BASELINE"; then
                 ok "Local now matches live (old version backed up)"
@@ -230,9 +252,22 @@ echo "[4/5] Installing verify-gridnode-candidate CLI..."
 
 VERIFY_SRC="$HANDOFF_DIR/skills/mavin-runtime-verify/verify-candidate.sh"
 if [ -f "$VERIFY_SRC" ]; then
-    cp "$VERIFY_SRC" /usr/local/bin/verify-gridnode-candidate
-    chmod +x /usr/local/bin/verify-gridnode-candidate
-    ok "verify-gridnode-candidate installed to /usr/local/bin/"
+    if cp "$VERIFY_SRC" /usr/local/bin/verify-gridnode-candidate 2>/dev/null; then
+        chmod +x /usr/local/bin/verify-gridnode-candidate
+        ok "verify-gridnode-candidate installed to /usr/local/bin/"
+    else
+        # Try alternative install location: $HOME/.local/bin/
+        ALT_DIR="$HOME/.local/bin"
+        mkdir -p "$ALT_DIR"
+        if cp "$VERIFY_SRC" "$ALT_DIR/verify-gridnode-candidate" 2>/dev/null; then
+            chmod +x "$ALT_DIR/verify-gridnode-candidate"
+            warn "Could not write to /usr/local/bin/. Installed to $ALT_DIR/ instead"
+            warn "Add $ALT_DIR to your PATH: export PATH=\"$ALT_DIR:\$PATH\""
+        else
+            fail "Cannot install verify-gridnode-candidate" \
+                 "Tried /usr/local/bin/ and $ALT_DIR/. Check disk space and permissions."
+        fi
+    fi
 else
     fail "verify-candidate.sh not found in handbook repo" \
          "Check $HANDOFF_DIR/skills/mavin-runtime-verify/"
@@ -240,7 +275,7 @@ fi
 
 if ! command -v verify-gridnode-candidate &> /dev/null; then
     fail "verify-gridnode-candidate not on PATH" \
-         "Check /usr/local/bin/ is in PATH and the install succeeded"
+         "Check that the install location is in your PATH"
 fi
 
 # ─────────────────────────────────────────────────────────────────────────────
