@@ -48,17 +48,20 @@ fi
 ls /workspace/.skills/
 ```
 
-You should see:
+You should see (after bootstrap step 9 runs):
 - `gridnode-handoff-loader`
 - `gridnode-mavis-builder`
-- `gridnode-runtime-verify` (auto-installed by bootstrap)
-- `mavin-build-candidate`, `mavin-visual-render`, `mavin-verify-deploy`,
-  `mavin-runtime-verify`, `mavin-debug-failure` (in handbook repo)
+- 6 Ponytail skills: `ponytail-mavis`, `ponytail-audit`, `ponytail-review`, `ponytail-debt`, `ponytail-gain`, `ponytail-help`
+- 5 mavin-* skills: `mavin-build-candidate`, `mavin-visual-render`, `mavin-verify-deploy`, `mavin-runtime-verify`, `mavin-debug-failure`
+
+**The 5 mavin-* skills are critical.** Without them, you can't follow the operating contract. They're auto-installed by bootstrap step 9 as of 2026-06-23.
 
 If any are missing, run:
 ```bash
 bash /workspace/.gridnode-handoff/bootstrap.sh /workspace/gridnode-project/01_SOURCE_TRUTH_LOCKED/gridnode-v1.3_post-phase-D_baseline.html
 ```
+
+This step installs everything: Ponytail skills, GRID//NODE builder, AND all 5 mavin-* skills.
 
 ### Step 4: Load credentials (if you need to deploy)
 
