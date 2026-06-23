@@ -123,3 +123,28 @@ When bumping versions:
 2. Update the version field in any relevant docs
 3. Commit with a clear message: "Bump to v1.x.y"
 4. Push — CI will run automatically
+## [1.3.0] — 2026-06-22 (rc26)
+
+### Changed
+
+- **Locked baseline updated** to `875f7a9f8d8a529037c8746a1137ff55d67f1927c2c18670a47ff556d7ef20a5` (970,160 bytes, rc26)
+- **Live URL** updated to `https://gridnode.network` (with `gridnode.pages.dev` as legacy alias)
+- **9 deploys shipped today** (rc17 → rc26):
+  - Splash v2: 1-line value + 1 CTA, removed 4-line headline + 4 mini-pills + dual CTAs
+  - Wordmark centering (4 SVG locations)
+  - Boot redesign: terminal log streaming + scan reveal + pixel-stream progress
+  - PWA install foundation: real `/sw.js`, real `/manifest.json`, real icon-192.png + icon-512.png
+  - LAB mobile text overlap fix
+  - Click delay / text-selection-on-tap fix (4 passive:true listeners)
+  - VAULT SYSTEM card: CHECK FOR UPDATES / REFRESH DATA / RELOAD APP buttons
+  - VAULT buttons wired to window.* (was inside IIFE)
+- **Handoff doc overhauled**: added founder profile + tone guide + autonomy manifesto + drift prevention
+- **Added** `deploy-gridnode.sh` (one-command deploy + auto-handoff sync)
+- **Added** `handoff-update.sh` (drift detector between live and local)
+- **Added** git `post-commit` hook (auto-runs handoff-update on baseline changes)
+
+### Fixed
+
+- SHA drift between local lock and live deploy (was `5316f405...` 1,006,248 bytes vs `875f7a9f...` 970,160 bytes)
+- Stale handoff doc references
+

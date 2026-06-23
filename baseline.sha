@@ -1,11 +1,13 @@
 # GRID//NODE Locked Baseline
-# Updated: 2026-06-22 (post-better-dismissal-cooldown)
+# Updated: 2026-06-22 (post-rc26, after 9 deploys)
 # 
 # This file is the authoritative pointer to the locked baseline.
 # The actual file lives at: 
 #   /workspace/gridnode-project/01_SOURCE_TRUTH_LOCKED/gridnode-v1.3_post-phase-D_baseline.html
-# The live URL is: https://gridnode.network
+# The live URL is: https://gridnode.network (custom domain, primary)
+#                  https://gridnode.pages.dev (Cloudflare Pages alias)
 # Service worker: /sw.js (separate file, 1270 bytes)
+# Manifest: /manifest.json (separate file, 21255 bytes)
 
-SHA-256: 5316f40543720941beb0080cbcd93c95a02658bb38963747be1052c1f68392f3
-SIZE: 1006248 bytes
+SHA-256: 875f7a9f8d8a529037c8746a1137ff55d67f1927c2c18670a47ff556d7ef20a5
+SIZE: 970160 bytes
