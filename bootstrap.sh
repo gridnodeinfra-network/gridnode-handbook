@@ -127,13 +127,37 @@ fi
 
 # 5. Install the handoff loader skill
 echo ""
-echo "[5/7] Installing handoff loader skill..."
+echo "[5/8] Installing handoff loader skill..."
 if [ -f "$HANDOFF_DIR/.skills/gridnode-handoff-loader/SKILL.md" ]; then
   cp "$HANDOFF_DIR/.skills/gridnode-handoff-loader/SKILL.md" \
      "$SKILLS_DIR/gridnode-handoff-loader/SKILL.md"
   ok "Installed: gridnode-handoff-loader"
 else
   warn "handoff-loader skill not in handoff repo"
+fi
+
+# 5b. Install the GRID//NODE builder skill (Mavin role + Foundation)
+echo ""
+echo "[5b/8] Installing GRID//NODE builder skill..."
+BUILDER_REPO="https://github.com/gridnodeinfra-network/gridnode-mavis-builder.git"
+if git clone --depth 1 "$BUILDER_REPO" "$SKILLS_DIR/gridnode-mavis-builder" 2>/dev/null; then
+  ok "Installed: gridnode-mavis-builder (Mavin role + Foundation)"
+else
+  warn "Could not clone builder skill repo (network issue?)"
+  warn "Mavin will work without it; Foundation design tokens won't be available"
+fi
+
+# 5c. Install gh CLI if missing
+echo ""
+echo "[5c/8] Checking gh CLI..."
+if ! command -v gh &> /dev/null; then
+  if command -v apt-get &> /dev/null; then
+    apt-get install -y gh 2>/dev/null && ok "Installed gh CLI" || warn "gh CLI install failed (apt not available?)"
+  else
+    warn "gh CLI not installed and apt-get not available"
+  fi
+else
+  ok "gh CLI present"
 fi
 
 # 6. Verify the install
@@ -149,18 +173,46 @@ fi
 
 # 7. Run a smoke test
 echo ""
-echo "[7/7] Smoke test..."
-if [ -x "$HANDOFF_DIR/scripts/keyword-extractor.js" ] && [ -n "$BASELINE_PATH" ] && [ -f "$BASELINE_PATH" ]; then
-  # Run the keyword extractor and capture the count
-  output=$(node "$HANDOFF_DIR/scripts/keyword-extractor.js" "$BASELINE_PATH" 2>&1)
-  count=$(echo "$output" | grep -oE 'COUNT = [0-9]+' | grep -oE '[0-9]+')
-  if [ -n "$count" ]; then
-    ok "Keyword extractor: $count protected keywords (script output, not hand-typed)"
+echo "[7/8] Smoke test..."
+if [ -x "$HANDOFF_DIR/scripts/keyword-extractor.js" ]; then
+  if [ -n "$BASELINE_PATH" ] && [ -f "$BASELINE_PATH" ]; then
+    output=$(node "$HANDOFF_DIR/scripts/keyword-extractor.js" "$BASELINE_PATH" 2>&1)
+    count=$(echo "$output" | grep -oE 'COUNT = [0-9]+' | grep -oE '[0-9]+')
+    if [ -n "$count" ]; then
+      ok "Keyword extractor: $count protected keywords"
+    else
+      err "Keyword extractor ran but no count found in output"
+      echo "       This is the bug that survived v1.0 → v1.1. Fix scripts/keyword-extractor.js"
+      exit 1
+    fi
   else
-    warn "Keyword extractor ran but no count found in output"
+    err "SMOKE TEST CANNOT RUN: baseline file not provided"
+    echo "       Run: $0 /path/to/gridnode-v1.3_post-phase-D_baseline.html"
+    echo "       (Get it from: /workspace/gridnode-project/01_SOURCE_TRUTH_LOCKED/ or curl gridnode.network)"
+    exit 1
   fi
 else
-  echo "       (skipped — no baseline or no extractor)"
+  err "SMOKE TEST CANNOT RUN: extractor missing at $HANDOFF_DIR/scripts/keyword-extractor.js"
+  echo "       This is mandatory — do not silently skip"
+  exit 1
+fi
+
+# 8. Verify live matches lock
+echo ""
+echo "[8/8] Verifying live deploy matches lock..."
+LIVE_URL=$(grep -oE 'https?://[^ ]+' baseline.sha 2>/dev/null | head -1)
+LOCK_SHA=$(grep -oE '[0-9a-f]{64}' baseline.sha 2>/dev/null | head -1)
+if [ -n "$LIVE_URL" ] && [ -n "$LOCK_SHA" ]; then
+  LIVE_SHA=$(curl -s "$LIVE_URL" 2>/dev/null | sha256sum | cut -d' ' -f1)
+  if [ "$LIVE_SHA" = "$LOCK_SHA" ]; then
+    ok "Live deploy matches lock: ${LIVE_SHA:0:16}..."
+  else
+    err "MISMATCH: live=${LIVE_SHA:0:16}... locked=${LOCK_SHA:0:16}..."
+    echo "       Either deploy the lock to live, OR update baseline.sha to current live."
+    exit 1
+  fi
+else
+  warn "Could not parse LIVE_URL or LOCK_SHA from baseline.sha"
 fi
 
 # Final summary
@@ -173,7 +225,9 @@ echo "  - List the skills:     ls $SKILLS_DIR/"
 echo "  - Run the tests:       cd $HANDOFF_DIR && npm test"
 echo "  - Audit the baseline:  node $HANDOFF_DIR/scripts/consolidation-review.js <baseline>"
 echo ""
-echo "Live URL:    https://gridnode.pages.dev"
+LIVE_URL_FINAL=$(grep -oE 'https?://gridnode[^ ]+' baseline.sha 2>/dev/null | head -1)
+[ -z "$LIVE_URL_FINAL" ] && LIVE_URL_FINAL="https://gridnode.network"
+echo "Live URL:    $LIVE_URL_FINAL"
 echo "TinyURL:     https://tinyurl.com/25h4qg7x"
 echo ""
 echo "Default mode:  Ponytail full (lazy senior dev, smallest runnable check required)"
