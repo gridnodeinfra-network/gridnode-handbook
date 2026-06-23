@@ -322,20 +322,79 @@ else
   warn "Could not parse LIVE_URL or LOCK_SHA from baseline.sha"
 fi
 
-# 9. Install runtime-verify scripts (NEW: prevents shipping buggy code)
+# 9. Install runtime-verify scripts + ALL mavin-* skills (NEW: prevents shipping buggy code)
 echo ""
-echo "[9/9] Installing runtime-verify scripts..."
+echo "[9/9] Installing runtime-verify + mavin-* skills..."
+
+# 9a. Install the verify-candidate.sh binary
 VERIFY_DIR="$HANDOFF_DIR/skills/mavin-runtime-verify"
 if [ -f "$VERIFY_DIR/verify-candidate.sh" ]; then
-    # Copy to a stable, executable location
     cp "$VERIFY_DIR/verify-candidate.sh" /usr/local/bin/verify-gridnode-candidate
     chmod +x /usr/local/bin/verify-gridnode-candidate
     ok "verify-candidate.sh → /usr/local/bin/verify-gridnode-candidate"
-    
-    # Add a hook to deploy-gridnode.sh so it can't be skipped
-    HOOK_PATH="$HANDOFF_DIR/scripts/deploy-pre-hook.sh"
-    mkdir -p "$HANDOFF_DIR/scripts"
-    cat > "$HOOK_PATH" <<'EOF'
+else
+    warn "verify-candidate.sh not found in handbook repo — runtime checks disabled"
+fi
+
+# 9b. Install ALL mavin-* skills to /workspace/.skills/
+# These are NOT auto-installed by older bootstrap versions. Without this step,
+# the next Mavin won't know the mavin-build-candidate / mavin-visual-render /
+# mavin-verify-deploy / mavin-runtime-verify / mavin-debug-failure patterns.
+echo ""
+echo "[9b/9] Installing mavin-* skills (5 critical skills)..."
+
+MAVIN_SKILLS=(
+    "mavin-build-candidate"
+    "mavin-visual-render"
+    "mavin-verify-deploy"
+    "mavin-runtime-verify"
+    "mavin-debug-failure"
+)
+
+mavin_installed=0
+for skill in "${MAVIN_SKILLS[@]}"; do
+    src="$HANDOFF_DIR/skills/$skill/SKILL.md"
+    dest="$SKILLS_DIR/$skill/SKILL.md"
+    if [ -f "$src" ]; then
+        mkdir -p "$SKILLS_DIR/$skill"
+        cp "$src" "$dest"
+        
+        # Also copy any companion scripts
+        if [ -d "$HANDOFF_DIR/skills/$skill" ]; then
+            shopt -s nullglob
+            for f in "$HANDOFF_DIR/skills/$skill"/*.sh "$HANDOFF_DIR/skills/$skill"/*.py "$HANDOFF_DIR/skills/$skill"/*.js; do
+                if [ -f "$f" ]; then
+                    fname=$(basename "$f")
+                    cp "$f" "$SKILLS_DIR/$skill/$fname"
+                    chmod +x "$SKILLS_DIR/$skill/$fname" 2>/dev/null || true
+                fi
+            done
+            shopt -u nullglob
+        fi
+        mavin_installed=$((mavin_installed + 1))
+        ok "Installed: $skill"
+    else
+        warn "Missing in handbook repo: $skill (skipping)"
+    fi
+done
+echo ""
+ok "Installed $mavin_installed/5 mavin-* skills to /workspace/.skills/"
+
+# 9c. Verify the mavin-* skills are in place
+echo ""
+echo "[9c/9] Verifying mavin-* skills install..."
+mavin_present=$(ls "$SKILLS_DIR"/mavin-*/SKILL.md 2>/dev/null | wc -l)
+if [ "$mavin_present" -ge 5 ]; then
+    ok "All 5 mavin-* skills present"
+else
+    warn "Only $mavin_present/5 mavin-* skills present — manual pull may be needed"
+    echo "       Run: bash /workspace/.gridnode-handoff/scripts/install-mavin-skills.sh"
+fi
+
+# 9d. Add pre-deploy hook
+HOOK_PATH="$HANDOFF_DIR/scripts/deploy-pre-hook.sh"
+mkdir -p "$HANDOFF_DIR/scripts"
+cat > "$HOOK_PATH" <<'EOF'
 #!/bin/bash
 # Pre-deploy hook — runs automatically before any deploy
 # Catches: duplicate function defs, scope leaks, ReferenceErrors, large deltas
@@ -354,11 +413,8 @@ if ! verify-gridnode-candidate "$CANDIDATE"; then
 fi
 echo "✅ Verification passed. Safe to deploy."
 EOF
-    chmod +x "$HOOK_PATH"
-    ok "Pre-deploy hook installed at $HOOK_PATH"
-else
-    warn "verify-candidate.sh not found in handbook repo — runtime checks disabled"
-fi
+chmod +x "$HOOK_PATH"
+ok "Pre-deploy hook installed at $HOOK_PATH"
 
 # Final summary
 echo ""
