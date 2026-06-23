@@ -186,7 +186,9 @@ fi
 echo ""
 echo "[5d/8] Loading credentials..."
 if [ -f /workspace/.gridnode-secrets/load-credentials.sh ]; then
-  bash /workspace/.gridnode-secrets/load-credentials.sh
+  # Use 'source' not 'bash' so the loader's exports propagate to this shell
+  # (bash runs in a subshell; its exports don't reach us)
+  source /workspace/.gridnode-secrets/load-credentials.sh
   if [ -n "$GITHUB_GRIDNODE_TOKEN" ]; then
     ok "GitHub token loaded (Pipe-owned, see CREDENTIALS.md for authority rules)"
   fi
