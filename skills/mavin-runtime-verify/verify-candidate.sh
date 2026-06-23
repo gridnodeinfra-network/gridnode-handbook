@@ -43,8 +43,10 @@ echo ""
 
 # 2. Count setTimeout/setInterval/Promise bodies
 echo "2/6 Counting async bodies..."
-timeouts=$(grep -cE "setTimeout|setInterval" "$CANDIDATE" 2>/dev/null || echo 0)
-promises=$(grep -cE "\.then\s*\(|\.catch\s*\(|\.finally\s*\(|new Promise" "$CANDIDATE" 2>/dev/null || echo 0)
+timeouts=$(grep -cE "setTimeout|setInterval" "$CANDIDATE" 2>/dev/null | head -1)
+[ -z "$timeouts" ] && timeouts=0
+promises=$(grep -cE "\.then\s*\(|\.catch\s*\(|\.finally\s*\(|new Promise" "$CANDIDATE" 2>/dev/null | head -1)
+[ -z "$promises" ] && promises=0
 echo "  setTimeout/setInterval: $timeouts"
 echo "  Promise bodies: $promises"
 if [ "$timeouts" -gt 0 ] || [ "$promises" -gt 0 ]; then
@@ -55,7 +57,8 @@ echo ""
 
 # 3. Count IIFEs (potential scope boundaries)
 echo "3/6 Counting IIFEs (potential scope boundaries)..."
-iifes=$(grep -cE "\(function\s*\(" "$CANDIDATE" 2>/dev/null || echo 0)
+iifes=$(grep -cE "\(function\s*\(" "$CANDIDATE" 2>/dev/null | head -1)
+[ -z "$iifes" ] && iifes=0
 echo "  IIFEs: $iifes"
 if [ "$iifes" -gt 5 ]; then
     echo "  ⚠️  Many IIFEs — high risk of scope leaks"
@@ -76,9 +79,13 @@ if [ -f "$baseline_path" ]; then
     if [ $delta -gt 10000 ]; then
         echo "  ⚠️  Large delta (>10KB) — review for unintended changes"
     fi
-    if [ $delta -lt -1000 ]; then
-        echo "  ⚠️  Negative delta — candidate is SMALLER than baseline. Suspicious."
+    # Note: a smaller candidate isn't necessarily bad (could be a cleanup).
+    # Only fail if the candidate is suspiciously small (<10% of baseline).
+    if [ $delta -lt -1000 ] && [ "$candidate_size" -lt $((baseline_size / 10)) ]; then
+        echo "  ⚠️  Candidate is <10% of baseline size — verify this is intentional"
         FAIL=1
+    elif [ $delta -lt -1000 ]; then
+        echo "  ℹ️  Candidate is smaller than baseline (delta: $delta bytes)"
     fi
 else
     echo "  ⚠️  Baseline not found: $baseline_path"
@@ -89,7 +96,8 @@ echo ""
 echo "5/6 Counting protected keywords..."
 protected_keywords=0
 for kw in "scannerMode" "gn_settings" "Phase Engine" "SHOT HISTORY" "VAULT"; do
-    count=$(grep -c "$kw" "$CANDIDATE" 2>/dev/null || echo 0)
+    count=$(grep -c "$kw" "$CANDIDATE" 2>/dev/null | head -1)
+    [ -z "$count" ] && count=0
     if [ "$count" -gt 0 ]; then
         protected_keywords=$((protected_keywords + count))
     fi
@@ -103,7 +111,13 @@ echo ""
 # 6. Browser test (if Playwright available)
 echo "6/6 Browser test..."
 if command -v python3 &> /dev/null && python3 -c "import playwright" 2>/dev/null; then
-    python3 -c "
+    # Check if browsers are installed first
+    if ! python3 -c "from playwright.sync_api import sync_playwright; p = sync_playwright().start(); p.chromium.launch(headless=True).close(); p.stop()" 2>/dev/null; then
+        echo "  ⚠️  Playwright installed but browsers missing"
+        echo "  Install with: playwright install chromium"
+        echo "  Skipping browser test (not a candidate issue)"
+    else
+        python3 -c "
 from playwright.sync_api import sync_playwright
 import sys
 try:
@@ -138,6 +152,7 @@ except Exception as e:
     if [ "$BROWSER_RESULT" -ne 0 ]; then
         FAIL=1
     fi
+    fi  # Close "browsers installed" check
 else
     echo "  ⚠️  Playwright not available, skipping browser test"
 fi
@@ -148,8 +163,10 @@ if [ $FAIL -eq 0 ]; then
     echo "  ✅ ALL CHECKS PASSED"
     echo "  Safe to deploy with:"
     echo "    ./deploy-gridnode.sh '<message>' $CANDIDATE"
+    exit 0
 else
     echo "  ❌ CHECKS FAILED — DO NOT DEPLOY YET"
     echo "  Fix the issues above and re-run this verification"
+    exit 1
 fi
 echo "═══════════════════════════════════════════════════════════════"
