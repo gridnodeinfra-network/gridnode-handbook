@@ -187,7 +187,7 @@ echo ""
 echo "[7/8] Smoke test..."
 if [ -x "$HANDOFF_DIR/scripts/keyword-extractor.js" ]; then
   if [ -n "$BASELINE_PATH" ] && [ -f "$BASELINE_PATH" ]; then
-    output=$(node "$HANDOFF_DIR/scripts/keyword-extractor.js" "$BASELINE_PATH" 2>&1)
+    output=$(node "$HANDOFF_DIR/scripts/keyword-extractor.js" "$BASELINE_PATH" 2>&1 || true)
     count=$(echo "$output" | grep -oE 'COUNT = [0-9]+' | grep -oE '[0-9]+')
     if [ -n "$count" ]; then
       ok "Keyword extractor: $count protected keywords"
