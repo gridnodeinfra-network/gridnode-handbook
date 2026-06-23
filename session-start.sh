@@ -36,6 +36,11 @@
 
 set -e
 
+# CRITICAL: Move to a safe directory FIRST. If the user ran this from inside
+# /workspace/.gridnode-handoff/ (or any other dir we might nuke), staying
+# there would break the script. Going to /workspace is safe.
+cd /workspace
+
 # Prevent concurrent runs (would corrupt state)
 LOCK_FILE="/tmp/gridnode-session-start.lock"
 exec 200>"$LOCK_FILE"
