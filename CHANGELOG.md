@@ -148,3 +148,18 @@ When bumping versions:
 - SHA drift between local lock and live deploy (was `5316f405...` 1,006,248 bytes vs `875f7a9f...` 970,160 bytes)
 - Stale handoff doc references
 
+
+## [1.3.1] — 2026-06-23 (rc27)
+
+### Added
+
+- **DASH empty-state CTA** — replaced "TAP THE + BUTTON" text with a real `<button class="btn-full btn-primary empty-cta" onclick="handleShotFab()">LOG YOUR FIRST SHOT</button>` in both the static initial HTML and the JS template literal in `renderLog()`. Mobile tap target now meets 44px minimum. Auto-opens the shot log modal on click. Includes `aria-label` for screen readers.
+
+### Changed
+
+- **Locked baseline updated** to `f75a81cd168dadcb1a26b1b05d8d9c7e413f20b1f10737cfa4f1b27f7848e452` (970,531 bytes, rc27)
+- Size delta: +371 bytes from rc26
+
+### Fixed
+
+- New users had no clear path to log their first shot — the empty state showed text but no actual button. The DASH page just looked dead.
