@@ -173,13 +173,32 @@ fi
 
 # 6. Verify the install
 echo ""
-echo "[6/7] Verifying install..."
-expected_skills=7
-actual_skills=$(ls "$SKILLS_DIR"/{ponytail-*,gridnode-handoff-loader}/SKILL.md 2>/dev/null | wc -l)
+echo "[6/8] Verifying install..."
+expected_skills=8
+actual_skills=$(ls "$SKILLS_DIR"/{ponytail-*,gridnode-handoff-loader,gridnode-mavis-builder}/SKILL.md 2>/dev/null | wc -l)
 if [ "$actual_skills" -eq "$expected_skills" ]; then
-  ok "All $expected_skills skills installed (6 Ponytail + 1 handoff loader)"
+  ok "All $expected_skills skills installed (6 Ponytail + 2 GRID//NODE)"
 else
   warn "Only $actual_skills of $expected_skills skills present"
+fi
+
+# 6b. Run Foundation vitest smoke test (NEW)
+echo ""
+echo "[6b/8] Foundation vitest smoke test..."
+if [ -f "$SKILLS_DIR/gridnode-mavis-builder/foundation/vitest.config.js" ] && [ -d "$SKILLS_DIR/gridnode-mavis-builder/foundation/tests" ]; then
+  cd "$SKILLS_DIR/gridnode-mavis-builder/foundation"
+  if [ -d node_modules ]; then
+    if (cd "$SKILLS_DIR/gridnode-mavis-builder/foundation" && npx --no-install vitest run --reporter=basic 2>&1 | tail -10) ; then
+      ok "Foundation tests passed (jsdom env verified)"
+    else
+      warn "Foundation tests FAILED — env config may need repair"
+      warn "Run manually: cd foundation && npx vitest run"
+    fi
+  else
+    warn "Foundation node_modules missing — run: cd foundation && npm install"
+  fi
+else
+  warn "Foundation tests not configured (vitest.config.js or tests/ missing)"
 fi
 
 # 7. Run a smoke test
