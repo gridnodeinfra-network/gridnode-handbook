@@ -182,6 +182,23 @@ else
   warn "Only $actual_skills of $expected_skills skills present"
 fi
 
+# 5d. Load credentials if available
+echo ""
+echo "[5d/8] Loading credentials..."
+if [ -f /workspace/.gridnode-secrets/load-credentials.sh ]; then
+  bash /workspace/.gridnode-secrets/load-credentials.sh
+  if [ -n "$GITHUB_GRIDNODE_TOKEN" ]; then
+    ok "GitHub token loaded (Pipe-owned, see CREDENTIALS.md for authority rules)"
+  fi
+  if [ -n "$CLOUDFLARE_API_TOKEN" ]; then
+    ok "Cloudflare token loaded"
+  fi
+else
+  warn "Credential store not found at /workspace/.gridnode-secrets/"
+  warn "If you need to push/deploy, ask Pipe to bootstrap credentials first."
+  warn "See: /workspace/.gridnode-secrets/CREDENTIALS.md (when available)"
+fi
+
 # 6b. Run Foundation vitest smoke test (NEW)
 echo ""
 echo "[6b/8] Foundation vitest smoke test..."
