@@ -1,11 +1,20 @@
 # GRID//NODE — Mavin Start Here
 
-**This is the ONE document.** Read it once and you have everything you need.
+## ⚡ RUN THIS FIRST (copy-paste the whole line):
 
-If you got here by running `session-start.sh`, the environment is ready. If not, run this first:
 ```bash
 bash <(curl -s https://raw.githubusercontent.com/gridnodeinfra-network/gridnode-handbook/main/session-start.sh)
 ```
+
+That ONE command does everything: clones handbook, installs 5 mavin skills + 6 ponytail skills + verify CLI, syncs baseline to live, verifies state. Exits with "✓ READY" or one clear error.
+
+**After it says READY, come back here and read the rest.**
+
+---
+
+This is the ONE document. Read it once and you have everything you need.
+
+If `session-start.sh` isn't running (e.g., on a fresh sandbox with no local file), the curl version above works without anything pre-existing. The script downloads itself from the public repo, runs, and self-heals from any state.
 
 ---
 
