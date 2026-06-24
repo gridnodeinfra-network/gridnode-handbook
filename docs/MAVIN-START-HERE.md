@@ -233,3 +233,13 @@ If something's not in this doc, read the skill for the relevant area. If it's no
 ---
 
 **If you got here by running session-start.sh, the env is ready. Go build.** 🤓
+
+## If credentials are missing
+
+The sandbox-local credential store at `/workspace/.gridnode-secrets/` may not exist on fresh sandboxes. If deploys fail with "no Cloudflare token", ask Pipe to run:
+
+```bash
+bash /workspace/.gridnode-handoff/install-credentials.sh
+```
+
+This prompts Pipe for tokens once, saves them securely (mode 700/600), and writes a loader script. Future Mavins in the same sandbox auto-load them.
