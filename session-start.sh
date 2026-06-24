@@ -287,6 +287,18 @@ fi
 # Step 5: Verify + tell Mavin what to read
 # ─────────────────────────────────────────────────────────────────────────────
 echo ""
+# 5d. Check for credentials (only prompts if missing)
+echo ""
+echo "[5d/5] Checking credentials..."
+CRED_FILE="/workspace/.gridnode-secrets/.tokens/cloudflare.txt"
+if [ ! -f "$CRED_FILE" ]; then
+    warn "No Cloudflare credentials found at $CRED_FILE"
+    warn "Future Mavins in this sandbox won't be able to deploy"
+    warn "Run later: bash /workspace/.gridnode-handoff/install-credentials.sh"
+else
+    ok "Cloudflare credentials present"
+fi
+
 echo "[5/5] Final verification..."
 
 # Self-test: verify-gridnode-candidate runs without crashing
