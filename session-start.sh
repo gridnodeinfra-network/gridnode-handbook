@@ -348,3 +348,10 @@ echo ""
 echo "To re-run this setup anytime: bash session-start.sh"
 echo "To verify a candidate before deploy: verify-gridnode-candidate <file>"
 echo ""
+
+# Ponytail version check (informational only)
+if [ -f "$HANDOFF_DIR/scripts/check-ponytail-updates.sh" ]; then
+    echo "[ponytail] Checking upstream for updates..."
+    bash "$HANDOFF_DIR/scripts/check-ponytail-updates.sh" 2>/dev/null || true
+fi
+echo ""
