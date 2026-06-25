@@ -121,6 +121,12 @@ else
 fi
 
 # Drive backup sync (Ponytail: optional, graceful degrade, fail-loud on error)
+# Privacy guard: only write to GRIDNODE/backups/* on Drive
+DRIVE_BASE="gdrive:GRIDNODE/backups"
+if [[ ! "$DRIVE_BASE" =~ ^gdrive:GRIDNODE/backups(/.*)?$ ]]; then
+    echo "  ⚠️  REFUSING: DRIVE_BASE must be exactly 'gdrive:GRIDNODE/backups[/...]'"
+    SKIP_DRIVE=true
+fi
 echo ""
 echo "💾 Drive backup sync..."
 SKIP_DRIVE=false

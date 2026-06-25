@@ -20,6 +20,17 @@ set -e
 REMOTE_NAME="${GRIDNODE_DRIVE_NAME:-gdrive}"
 DRIVE_BASE="$REMOTE_NAME:GRIDNODE/backups"
 
+# Privacy guard: hard-block any path outside GRIDNODE/backups
+# The OAuth token has full Drive access; this script enforces scope.
+# Allow ONLY: gdrive:GRIDNODE/backups  OR  gdrive:GRIDNODE/backups/...
+if [[ ! "$DRIVE_BASE" =~ ^${REMOTE_NAME}:GRIDNODE/backups(/.*)?$ ]]; then
+    err "REFUSING: DRIVE_BASE must be exactly '$REMOTE_NAME:GRIDNODE/backups[/...]'"
+    err "  Got: $DRIVE_BASE"
+    err "  This script may only write to GRIDNODE/backups/* on Drive."
+    err "  Path traversal (..) and other folders are blocked."
+    exit 99
+fi
+
 bold() { printf "\033[1m%s\033[0m\n" "$1"; }
 ok()   { printf "  \033[32m✓\033[0m %s\n" "$1"; }
 warn() { printf "  \033[33m⚠\033[0m %s\n" "$1"; }
