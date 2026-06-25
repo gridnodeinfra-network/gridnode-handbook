@@ -120,6 +120,32 @@ else
   echo "⚠️  handoff-update.sh not found, skipping handoff sync"
 fi
 
+# Drive backup sync (Ponytail: optional, graceful degrade, fail-loud on error)
+echo ""
+echo "💾 Drive backup sync..."
+SKIP_DRIVE=false
+for arg in "$@"; do
+  [ "$arg" = "--no-drive" ] && SKIP_DRIVE=true
+done
+
+if [ "$SKIP_DRIVE" = "true" ]; then
+  echo "  ⊘ skipped (--no-drive flag)"
+elif ! command -v rclone >/dev/null 2>&1; then
+  echo "  ⊘ skipped (rclone not installed)"
+elif ! rclone listremotes 2>/dev/null | grep -q "^gdrive:$"; then
+  echo "  ⊘ skipped (Drive not configured — run scripts/setup-drive.sh)"
+elif ! rclone lsd gdrive: >/dev/null 2>&1; then
+  echo "  ⚠️  Drive unreachable — backup may be stale"
+else
+  # Sync baseline + handoff + deliverables + the just-deployed build
+  DEPLOY_SHA=$(sha256sum "$DEPLOY/index.html" | cut -c1-16)
+  rclone copy "$DEPLOY/index.html" "gdrive:GRIDNODE/backups/deploys/${DEPLOY_SHA}_$(date +%Y%m%d_%H%M%S).html" 2>&1 | tail -1
+  rclone sync /workspace/gridnode-project/01_SOURCE_TRUTH_LOCKED gdrive:GRIDNODE/backups/baseline 2>&1 | tail -1
+  rclone sync /workspace/.gridnode-handoff gdrive:GRIDNODE/backups/handoff --exclude ".git/**" 2>&1 | tail -1
+  rclone sync /workspace/deliverables gdrive:GRIDNODE/backups/deliverables 2>&1 | tail -1
+  echo "  ✓ Drive backed up (deploys/$DEPLOY_SHA)"
+fi
+
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo "  ✅ DEPLOY COMPLETE"
@@ -128,3 +154,4 @@ echo ""
 echo "Live: https://gridnode.network/"
 echo "Handoff: $HANDOFF (updated)"
 echo "GitHub: pushed"
+echo "Drive: backed up"
