@@ -234,6 +234,26 @@ If something's not in this doc, read the skill for the relevant area. If it's no
 
 **If you got here by running session-start.sh, the env is ready. Go build.** 🤓
 
+
+
+---
+
+## Updating Ponytail
+
+On bootstrap, the system auto-checks Ponytail upstream. If a new version is out, you'll see:
+
+```
+📦 Ponytail update available
+   Local:    6da37bf
+   Upstream: a945778b (v4.8.3)
+
+To update: cd /workspace/ponytail && git pull
+```
+
+To pull: `cd /workspace/ponytail && git pull`. The script does NOT auto-update (humans review changes).
+
+To skip the check: remove or rename `scripts/check-ponytail-updates.sh` in your handbook clone.
+
 ## If credentials are missing
 
 The sandbox-local credential store at `/workspace/.gridnode-secrets/` may not exist on fresh sandboxes. If deploys fail with "no Cloudflare token", ask Pipe to run:
