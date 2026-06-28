@@ -1,13 +1,21 @@
 # GRID//NODE Locked Baseline
-# Updated: 2026-06-23 (post-rc27, DASH empty-state CTA shipped)
-# 
+# Updated: 2026-06-28 (post-rc32, full setup verified)
+#
 # This file is the authoritative pointer to the locked baseline.
-# The actual file lives at: 
-#   /workspace/gridnode-project/01_SOURCE_TRUTH_LOCKED/gridnode-v1.3_post-phase-D_baseline.html
-# The live URL is: https://gridnode.network (custom domain, primary)
-#                  https://gridnode.pages.dev (Cloudflare Pages alias)
-# Service worker: /sw.js (separate file, 1270 bytes)
-# Manifest: /manifest.json (separate file, 21255 bytes)
+# The actual file lives at:
+#   https://gridnode.network/  (live)
+#   https://gridnode.pages.dev/  (Cloudflare Pages URL)
+#
+# Verification ladder (per RESILIENCE-HANDBOOK §2):
+#   live = baseline.sha = public baseline file = local baseline file
+#
+# Live URL:   https://gridnode.network/
+# Live size:  1,035,106 bytes
+# RC version: rc32
+# Updated by: Hermes (post-setup verification, 2026-06-28)
 
-SHA-256: f75a81cd168dadcb1a26b1b05d8d9c7e413f20b1f10737cfa4f1b27f7848e452
-SIZE: 970531 bytes
+LIVE_URL=https://gridnode.network/
+SHA-256=7e0d6d3be38de2e3a3a64ae248c35ced5fc788ae396126dc9c1be6bf27aeaf1f
+SIZE=1035106
+RC=rc32
+UPDATED=2026-06-28
