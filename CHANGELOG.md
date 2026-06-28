@@ -1,3 +1,31 @@
+
+## [2026-06-28] — rc32 SHIPPED (Hermes session)
+
+### Locked baseline
+- **Live SHA:** `7e0d6d3be38de2e3a3a64ae248c35ced5fc788ae396126dc9c1be6bf27aeaf1f`
+- **Live size:** 1,035,106 bytes
+- **Live URL:** https://gridnode.network/ + https://gridnode.pages.dev/
+
+### Confirmed by
+- rc32 directive acceptance gates: USER_01 only in changelog comments, node --check clean
+- 8/8 directive markers present in live HTML (signOutOverlay, openAuthUI, profAvaWrap, calcAndShowBMI, sndOn, etc.)
+- Topbar uses correct 2-icon layout (sound + avatar) + brand wordmark
+
+### Pending issues
+- www.gridnode.network still returning 522 (DNS record points to apex in self-reference loop; needs write-scoped CF token to fix)
+
+### Tools shipped in this session
+- `/usr/local/bin/search-hermes` — web search via Bing + persistent Chromium (CDP)
+- `/usr/local/bin/mavin-brief` — one-shot context reload from public sources
+- `/usr/local/share/hermes-skills/mavin-brief/` — skill definition
+- Cron jobs (delivered to Telegram):
+  - `gridnode-drift-watch` (aabff693c6c5) — 4x daily at 08:00/12:00/16:00/20:00 ET
+  - `gridnode-morning-brief` (0a3e11f356e9) — daily at 10:00 ET
+
+### Open work (laptop-required)
+See `/workspace/HERMES-CHECKLIST.md` for the host-side setup tasks.
+
+---
 # CHANGELOG
 
 All notable changes to this repository are documented here. The format is based on [Keep a Changelog](https://keepachangelog.com/) and this project adheres to [Semantic Versioning](https://semver.org/).
